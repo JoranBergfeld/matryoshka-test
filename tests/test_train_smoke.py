@@ -40,3 +40,17 @@ def test_run_training_mrl_smoke(tmp_path):
     assert (run_dir / "metrics.jsonl").exists()
     assert (run_dir / "plots" / "loss_curves.png").exists()
     assert result["epochs_completed"] == 1
+
+
+def test_resume_tolerates_orig_mod_prefix(tmp_path):
+    import torch
+    from torch.nn.modules.utils import consume_prefix_in_state_dict_if_present
+    from src.models import build_model
+    # a checkpoint saved from a compiled model has _orig_mod. prefixed keys
+    model = build_model("mrl", num_classes=3, nesting_dims=[8, 2048])
+    compiled_like = {f"_orig_mod.{k}": v for k, v in model.state_dict().items()}
+    consume_prefix_in_state_dict_if_present(compiled_like, "_orig_mod.")
+    # after stripping, an eager model must accept the keys
+    fresh = build_model("mrl", num_classes=3, nesting_dims=[8, 2048])
+    fresh.load_state_dict(compiled_like, strict=True)
+    assert set(compiled_like.keys()) == set(model.state_dict().keys())

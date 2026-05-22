@@ -9,6 +9,7 @@ import time
 
 import torch
 import torch.nn as nn
+from torch.nn.modules.utils import consume_prefix_in_state_dict_if_present
 from torch.optim.lr_scheduler import LambdaLR
 
 from src.checkpoint import (atomic_save, capture_rng_state, git_commit_hash,
@@ -121,7 +122,10 @@ def run_training(cfg, model_kind, run_name, train_loader, val_loader,
 
     if resume_path:
         ckpt = load_checkpoint(resume_path, map_location=device)
-        model.load_state_dict(ckpt["model"]); optimizer.load_state_dict(ckpt["optimizer"])
+        sd = ckpt["model"]
+        consume_prefix_in_state_dict_if_present(sd, "_orig_mod.")
+        getattr(model, "_orig_mod", model).load_state_dict(sd)
+        optimizer.load_state_dict(ckpt["optimizer"])
         scheduler.load_state_dict(ckpt["scheduler"]); scaler.load_state_dict(ckpt["scaler"])
         restore_rng_state(ckpt["rng"]); start_epoch = ckpt["epoch"] + 1
         best = ckpt["best_metric"]; history = ckpt.get("history", [])
@@ -185,7 +189,7 @@ def run_training(cfg, model_kind, run_name, train_loader, val_loader,
         _write_plots(history, record, is_mrl, nesting_dims, plots_dir)
 
         ckpt = {
-            "model": model.state_dict(), "optimizer": optimizer.state_dict(),
+            "model": getattr(model, "_orig_mod", model).state_dict(), "optimizer": optimizer.state_dict(),
             "scheduler": scheduler.state_dict(), "scaler": scaler.state_dict(),
             "epoch": epoch, "best_metric": max(best, val_acc[1]),
             "nesting_dims": nesting_dims, "rng": capture_rng_state(),
