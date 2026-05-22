@@ -1,0 +1,62 @@
+# All hyperparameters live here. CLI args override any value.
+run:
+  seed: 42
+  output_root: runs
+  log_level: INFO
+
+data:
+  imagenet_path_env: IMAGENET_PATH
+  num_classes: 1000
+  quick:
+    enabled: true          # default to the 100-class subset; --full disables
+    num_classes: 100
+  image_size: 224
+  resize_size: 256
+  mean: [0.485, 0.456, 0.406]
+  std:  [0.229, 0.224, 0.225]
+
+dataloader:
+  batch_size: 256
+  effective_batch_size: 256
+  num_workers: null
+  pin_memory: true
+  persistent_workers: true
+  prefetch_factor: 2
+
+model:
+  arch: resnet50
+  embedding_dim: 2048
+  mrl_nesting_dims: [8, 16, 32, 64, 128, 256, 512, 1024, 2048]
+  mrl_dim_weights: null
+  mrl_weighting: uniform
+
+optim:
+  name: sgd
+  lr: 0.1
+  momentum: 0.9
+  weight_decay: 1.0e-4
+  nesterov: false
+  label_smoothing: 0.1
+
+schedule:
+  epochs: 90
+  warmup_epochs: 5
+  type: cosine
+
+amp:
+  enabled: true
+  compile: true
+
+eval:
+  topk: [1, 5]
+  pca:
+    fit_every_epochs: 10
+    fit_sample_size: 50000
+  latency:
+    warmup_batches: 100
+    measure_samples: 1000
+
+checkpoint:
+  save_last: true
+  save_best: true
+  best_metric: val_top1
