@@ -22,7 +22,7 @@ data:
 dataloader:
   batch_size: 128
   effective_batch_size: 128
-  num_workers: 0             # Windows: >0 workers can hit page-file commit limit (err 1455)
+  num_workers: 4             # validated safe on Windows (8 hit page-file limit err 1455)
   pin_memory: true
   persistent_workers: true
   prefetch_factor: 2
