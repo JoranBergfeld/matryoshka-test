@@ -163,8 +163,9 @@ Reads `metrics.jsonl` from both run dirs; produces:
 ```
 .
 ├── README.md
-├── requirements.txt
-├── .gitignore                # ignores runs/ and the dataset dir
+├── pyproject.toml            # project metadata + dependencies (uv)
+├── uv.lock                   # uv lockfile (committed)
+├── .gitignore                # ignores runs/, the dataset dir, .venv/
 ├── configs/
 │   └── default.yaml          # all hyperparameters; CLI overrides
 ├── src/
@@ -184,11 +185,23 @@ Reads `metrics.jsonl` from both run dirs; produces:
 └── runs/                     # gitignored
 ```
 
-## Dependencies (`requirements.txt`)
+## Dependencies & environment (`uv`)
 
-`torch>=2.1`, `torchvision`, `numpy`, `matplotlib`, `scikit-learn`, `tqdm`,
-`pyyaml`, plus `kaggle` and `huggingface_hub` for `init_data.py`. No Lightning,
-no Accelerate, no timm — explicit, readable training loop.
+Managed with [`uv`](https://docs.astral.sh/uv/). Dependencies declared in
+`pyproject.toml`, pinned in a committed `uv.lock`. The `.venv/` is gitignored and
+created by `uv`.
+
+- Core: `torch>=2.1`, `torchvision`, `numpy`, `matplotlib`, `scikit-learn`,
+  `tqdm`, `pyyaml`.
+- Data-download extras (`init_data.py` only): `kaggle`, `huggingface_hub` — placed
+  in an optional `data` dependency group so training installs stay lean.
+
+Workflow:
+- `uv sync` — create `.venv` and install the locked dependencies.
+- `uv sync --extra data` — also install the download extras.
+- `uv run python scripts/train.py ...` — run inside the managed env.
+
+No Lightning, no Accelerate, no timm — explicit, readable training loop.
 
 ## Logging
 
@@ -205,14 +218,14 @@ Python `logging` with a file handler → `runs/<run_name>/train.log`. No `print`
 
 ## Definition of done
 
-- `python scripts/train.py --model baseline --run-name baseline` trains, produces
-  checkpoints + plots + jsonl.
-- `python scripts/train.py --model mrl --run-name mrl` does the same for MRL.
+- `uv run python scripts/train.py --model baseline --run-name baseline` trains,
+  produces checkpoints + plots + jsonl.
+- `uv run python scripts/train.py --model mrl --run-name mrl` does the same for MRL.
 - Ctrl+C mid-epoch produces a valid checkpoint; `--resume runs/mrl/last.pt`
   continues correctly.
-- `python scripts/analyze.py --baseline runs/baseline --mrl runs/mrl` produces the
-  comparison report.
-- `python scripts/train.py --quick --epochs 3 --model mrl` completes a full smoke
-  test in under 30 minutes on a single RTX 4060 Ti.
+- `uv run python scripts/analyze.py --baseline runs/baseline --mrl runs/mrl`
+  produces the comparison report.
+- `uv run python scripts/train.py --quick --epochs 3 --model mrl` completes a full
+  smoke test in under 30 minutes on a single RTX 4060 Ti.
 - README documents env setup, `IMAGENET_PATH` expectations, how to run each arm,
   expected wall-clock per epoch on RTX 4060 Ti, where outputs land.
