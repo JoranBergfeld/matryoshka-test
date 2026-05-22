@@ -1,4 +1,8 @@
-# All hyperparameters live here. CLI args override any value.
+# Smoke/demo config for Imagenette (a free 10-class ImageNet subset).
+# NOT the codified ImageNet-1K experiment — this exists to prove the pipeline
+# trains end-to-end on a GPU quickly. Run with:
+#   $env:IMAGENET_PATH = "data/imagenette2-320"
+#   uv run python scripts/train.py --config configs/imagenette.yaml --model mrl --epochs 3
 run:
   seed: 42
   output_root: runs
@@ -6,9 +10,9 @@ run:
 
 data:
   imagenet_path_env: IMAGENET_PATH
-  num_classes: 1000
+  num_classes: 10            # Imagenette has 10 classes
   quick:
-    enabled: true          # default to the 100-class subset; --full disables
+    enabled: false           # quick-subset is an ImageNet-1K concept; off here
     num_classes: 100
   image_size: 224
   resize_size: 256
@@ -16,10 +20,9 @@ data:
   std:  [0.229, 0.224, 0.225]
 
 dataloader:
-  batch_size: 256
-  effective_batch_size: 256
-  num_workers: 4             # On Windows, >4 can hit the page-file commit limit
-                             # (err 1455). null -> min(8, cpu_count); raise if able.
+  batch_size: 128
+  effective_batch_size: 128
+  num_workers: 0             # Windows: >0 workers can hit page-file commit limit (err 1455)
   pin_memory: true
   persistent_workers: true
   prefetch_factor: 2
@@ -40,13 +43,13 @@ optim:
   label_smoothing: 0.1
 
 schedule:
-  epochs: 90
-  warmup_epochs: 5
+  epochs: 3
+  warmup_epochs: 1
   type: cosine
 
 amp:
   enabled: true
-  compile: true
+  compile: false             # Windows/Triton support is flaky; not needed for a smoke
 
 eval:
   topk: [1, 5]

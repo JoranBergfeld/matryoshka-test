@@ -155,8 +155,15 @@ def run_training(cfg, model_kind, run_name, train_loader, val_loader,
                 loss = loss / accum
             scaler.scale(loss).backward()
             if (i + 1) % accum == 0:
+                scale_before = scaler.get_scale()
                 scaler.step(optimizer); scaler.update()
-                optimizer.zero_grad(set_to_none=True); scheduler.step()
+                optimizer.zero_grad(set_to_none=True)
+                # GradScaler skips the optimizer step when it shrinks the loss
+                # scale (inf/nan grads during AMP calibration). Only advance the
+                # LR schedule on steps that actually applied. Disabled scaler keeps
+                # scale==1.0, so this is always true on the CPU/no-AMP path.
+                if scaler.get_scale() >= scale_before:
+                    scheduler.step()
             running_loss += loss.item() * accum * y.size(0); seen += y.size(0)
             if interrupt.stop:
                 break
