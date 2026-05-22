@@ -41,12 +41,26 @@ def test_build_report_handles_separate_pca_row(tmp_path):
     assert "| 8 |" in md
 
 
-def test_latency_benchmark_noops_without_checkpoints(tmp_path):
-    from scripts.analyze import plot_latency_benchmark
-    result = plot_latency_benchmark(None, None, str(tmp_path / "lat.png"))
-    assert result is False
+def test_benchmark_latency_returns_positive_value_per_dim():
+    from scripts.analyze import benchmark_latency_by_dim
+    mrl, base = benchmark_latency_by_dim([8, 64, 2048], batch_size=8,
+                                         warmup_batches=2, measure_samples=16,
+                                         device="cpu")
+    assert set(mrl) == {8, 64, 2048}
+    assert set(base) == {8, 64, 2048}
+    assert all(v > 0 for v in mrl.values())
+    assert all(v > 0 for v in base.values())
 
 
-def test_latency_benchmark_noops_with_checkpoints(tmp_path):
+def test_plot_latency_benchmark_writes_png(tmp_path):
     from scripts.analyze import plot_latency_benchmark
-    assert plot_latency_benchmark("a.pt", "b.pt", str(tmp_path / "lat.png")) is False
+    out = tmp_path / "lat.png"
+    res = plot_latency_benchmark([8, 2048], str(out), batch_size=8,
+                                 warmup_batches=2, measure_samples=16, device="cpu")
+    assert out.exists() and out.stat().st_size > 0
+    assert res is not False
+
+
+def test_plot_latency_benchmark_empty_dims_skips(tmp_path):
+    from scripts.analyze import plot_latency_benchmark
+    assert plot_latency_benchmark([], str(tmp_path / "x.png"), device="cpu") is False
