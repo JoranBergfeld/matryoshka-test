@@ -54,7 +54,7 @@ def _run_baseline_pca_pass(cfg, run_name, model, train_loader, val_loader, devic
     dims = cfg["model"]["mrl_nesting_dims"]
     logger.info("Baseline PCA-truncation pass over up to %d samples...", cap)
     train_feats, train_labels = extract_features(model, train_loader, device, max_samples=cap)
-    val_feats, val_labels = extract_features(model, val_loader, device, max_samples=cap)
+    val_feats, val_labels = extract_features(model, val_loader, device, max_samples=None)
     pca_acc = pca_truncated_accuracy(train_feats, train_labels, val_feats, val_labels, dims)
     writer = JsonlWriter(os.path.join(cfg["run"]["output_root"], run_name, "metrics.jsonl"))
     writer.append({"epoch": cfg["schedule"]["epochs"] - 1,

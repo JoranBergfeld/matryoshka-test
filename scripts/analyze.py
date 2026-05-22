@@ -29,13 +29,15 @@ def _last_with(rows, key):
 
 
 def build_report(baseline_rows: list[dict], mrl_rows: list[dict]) -> str:
-    b_final = baseline_rows[-1]; m_final = mrl_rows[-1]
+    b_final = _last_with(baseline_rows, "val_top1")
+    m_final = _last_with(mrl_rows, "val_top1")
     pca = _last_with(baseline_rows, "pca_top1_by_dim")
     mrl_dim = _last_with(mrl_rows, "mrl_top1_by_dim")
     lines = ["# MRL vs Baseline ResNet50 — Analysis", ""]
-    lines += ["## Full-dim (2048) accuracy", "",
-              f"- Baseline top-1: {b_final.get('val_top1'):.2f}  top-5: {b_final.get('val_top5'):.2f}",
-              f"- MRL top-1: {m_final.get('val_top1'):.2f}  top-5: {m_final.get('val_top5'):.2f}", ""]
+    if b_final and m_final:
+        lines += ["## Full-dim (2048) accuracy", "",
+                  f"- Baseline top-1: {b_final.get('val_top1'):.2f}  top-5: {b_final.get('val_top5'):.2f}",
+                  f"- MRL top-1: {m_final.get('val_top1'):.2f}  top-5: {m_final.get('val_top5'):.2f}", ""]
     if pca and mrl_dim:
         lines += ["## Accuracy across nesting dims (top-1 %)", "",
                   "| dim | MRL | PCA-baseline |", "|---|---|---|"]
@@ -74,14 +76,13 @@ def _overlay(baseline_rows, mrl_rows, key, ylabel, title, out_path, log=False):
 
 
 def plot_latency_benchmark(baseline_ckpt, mrl_ckpt, out_path):
-    """Inference latency per sample at each dim, both arms. Requires loading the
-    trained checkpoints; skips cleanly (returns False) when either is absent."""
+    """Inference latency per sample at each dim, both arms. Deferred: not yet
+    implemented. Returns False (clean skip) regardless of inputs for now."""
     if not (baseline_ckpt and mrl_ckpt):
         print("Latency benchmark skipped (checkpoints not provided).")
         return False
-    # Full timing implementation is deferred; when wired it will warmup 100 batches
-    # and average over 1000 per dim with torch.cuda.synchronize() brackets.
-    raise NotImplementedError("latency benchmark timing not yet implemented")
+    print("Latency benchmark not yet implemented — skipping (deferred feature).")
+    return False
 
 
 def main(argv=None):
